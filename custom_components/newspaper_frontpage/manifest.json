@@ -1,9 +1,9 @@
 {
   "domain": "newspaper_frontpage",
   "name": "Newspaper Frontpage",
-  "documentation": "https://github.com/yourusername/home-assistant-newspaper-frontpage",
+  "documentation": "https://github.com/craigmdennis/home-assistant-newspaper-frontpage",
   "dependencies": [],
-  "codeowners": ["@yourusername"],
+  "codeowners": ["@craigmdennis"],
   "requirements": ["beautifulsoup4", "requests"],
   "version": "1.0.0",
   "iot_class": "cloud_polling"
