@@ -100,7 +100,7 @@ class NewspaperFrontpageCamera(Camera):
         self.newspaper_config = NEWSPAPERS[newspaper_id]
         
         self._attr_name = f"{self.newspaper_config['name']} Frontpage"
-        self._attr_unique_id = f"newspaper_frontpage_{newspaper_id}"
+        self._attr_unique_id = f"newspaper_frontpage_{self.newspaper_id}"
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
