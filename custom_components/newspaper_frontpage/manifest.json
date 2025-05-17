@@ -1,0 +1,10 @@
+{
+  "domain": "newspaper_frontpage",
+  "name": "Newspaper Frontpage",
+  "documentation": "https://github.com/yourusername/home-assistant-newspaper-frontpage",
+  "dependencies": [],
+  "codeowners": ["@yourusername"],
+  "requirements": ["beautifulsoup4", "requests"],
+  "version": "1.0.0",
+  "iot_class": "cloud_polling"
+}
