@@ -5,7 +5,7 @@ import logging
 from datetime import timedelta
 from typing import Any, Dict
 
-import requests
+import aiohttp
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
@@ -20,6 +20,15 @@ from . import NEWSPAPERS
 _LOGGER = logging.getLogger(__name__)
 
 SCAN_INTERVAL = timedelta(hours=1)
+FRONTPAGES_URL = "https://www.frontpages.com/"
+
+# Map newspaper IDs to their correct URL paths
+NEWSPAPER_URLS = {
+    "guardian": "the-guardian",
+    "times": "the-times",
+    "telegraph": "the-daily-telegraph",
+    "independent": "the-independent",
+}
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -60,28 +69,72 @@ class NewspaperFrontpageCamera(Camera):
         self._attr_name = f"{newspaper['name']} Frontpage"
         self._attr_unique_id = f"newspaper_frontpage_{newspaper_id}"
         self._image = None
+        self._image_url = None
+
+    async def async_update(self) -> None:
+        """Update the camera image."""
+        await self.coordinator.async_request_refresh()
+        if self.coordinator.data:
+            self._image_url = self.coordinator.data
+            _LOGGER.debug("Updated image URL: %s", self._image_url)
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
         """Return bytes of camera image."""
         try:
-            # Get the front page image
-            response = requests.get(self._newspaper["base_url"])
-            response.raise_for_status()
+            # Get the correct URL path for this newspaper
+            url_path = NEWSPAPER_URLS.get(self._newspaper_id)
+            if not url_path:
+                _LOGGER.error("No URL mapping found for newspaper: %s", self._newspaper_id)
+                return None
+
+            # Construct the newspaper's URL
+            newspaper_url = urljoin(FRONTPAGES_URL, f"{url_path}/")
+            _LOGGER.debug("Fetching newspaper page: %s", newspaper_url)
             
-            soup = BeautifulSoup(response.text, 'html.parser')
-            # Add your image extraction logic here based on the newspaper's HTML structure
-            # This is a placeholder - you'll need to implement the actual image extraction
-            image_url = "https://example.com/frontpage.jpg"  # Replace with actual image URL
+            async with aiohttp.ClientSession() as session:
+                # Get the newspaper page
+                async with session.get(newspaper_url, timeout=10) as response:
+                    response.raise_for_status()
+                    html = await response.text()
             
-            # Download the image
-            image_response = requests.get(image_url)
-            image_response.raise_for_status()
+            soup = BeautifulSoup(html, 'html.parser')
             
-            self._image = image_response.content
+            # Find the front page image - it's typically the first large image on the page
+            # Look for images with specific classes or attributes that indicate it's the front page
+            img = soup.find('img', {'class': 'giornale-img'})
+            
+            if not img:
+                # Fallback: look for any image that contains the newspaper name in its src
+                for img in soup.find_all('img'):
+                    src = img.get('src', '')
+                    if url_path in src.lower():
+                        break
+                else:
+                    _LOGGER.error("Could not find front page image for %s", self._newspaper["name"])
+                    return None
+            
+            if not img.get('src'):
+                _LOGGER.error("Image found but no src attribute for %s", self._newspaper["name"])
+                return None
+            
+            # Get the image
+            image_url = urljoin(newspaper_url, img['src'])
+            _LOGGER.debug("Found image URL: %s", image_url)
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url, timeout=10) as response:
+                    response.raise_for_status()
+                    self._image = await response.read()
+            
+            self._image_url = image_url
+            _LOGGER.debug("Image downloaded successfully, size: %d bytes", len(self._image))
             return self._image
             
+        except aiohttp.ClientError as err:
+            _LOGGER.error("Network error getting newspaper frontpage: %s", err)
+            return None
         except Exception as err:
             _LOGGER.error("Error getting newspaper frontpage: %s", err)
             return None
@@ -92,6 +145,7 @@ class NewspaperFrontpageCamera(Camera):
         return {
             "newspaper_id": self._newspaper_id,
             "newspaper_name": self._newspaper["name"],
+            "image_url": self._image_url,
         }
 
 def get_image_url():
