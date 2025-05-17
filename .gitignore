@@ -74,4 +74,5 @@ Temporary Items
 *.jpg
 *.jpeg
 *.png
-*.gif 
+*.gif
+deploy.py 
