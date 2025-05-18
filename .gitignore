@@ -79,4 +79,7 @@ deploy.py
 
 # New additions
 .env.*
-!.env.example 
+!.env.example
+
+# Ignore .cursor directory
+.cursor/ 
