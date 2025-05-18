@@ -14,8 +14,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.device_registry import DeviceInfo
 
-from . import NEWSPAPERS
+from . import NEWSPAPERS, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,40 +37,61 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Newspaper Frontpage images."""
-    # Create a coordinator for each newspaper
-    coordinators = {}
-    images = []
+    newspaper_id = config_entry.data["newspaper_id"]
+    newspaper = NEWSPAPERS[newspaper_id]
     
-    for newspaper_id, newspaper in NEWSPAPERS.items():
-        # Create coordinator for this newspaper
-        coordinator = DataUpdateCoordinator(
-            hass,
-            _LOGGER,
-            name=f"newspaper_frontpage_{newspaper_id}",
-            update_interval=SCAN_INTERVAL,
-        )
-        coordinators[newspaper_id] = coordinator
-        
-        # Create image entity
-        image = NewspaperFrontpageImage(hass, coordinator, newspaper_id, newspaper)
-        images.append(image)
+    # Create coordinator for this newspaper
+    coordinator = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name=f"newspaper_frontpage_{newspaper_id}",
+        update_interval=SCAN_INTERVAL,
+    )
     
-    # Add all images
-    async_add_entities(images)
+    # Create image entity
+    image = NewspaperFrontpageImage(
+        hass,
+        coordinator,
+        newspaper_id,
+        newspaper,
+        config_entry.entry_id
+    )
+    
+    # Add the image entity
+    async_add_entities([image])
 
 class NewspaperFrontpageImage(ImageEntity):
     """Representation of a Newspaper Frontpage image."""
 
-    def __init__(self, hass: HomeAssistant, coordinator: DataUpdateCoordinator, newspaper_id: str, newspaper: Dict[str, Any]) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        coordinator: DataUpdateCoordinator,
+        newspaper_id: str,
+        newspaper: Dict[str, Any],
+        entry_id: str
+    ) -> None:
         """Initialize a Newspaper Frontpage image."""
         super().__init__(hass)
         self.coordinator = coordinator
         self._newspaper_id = newspaper_id
         self._newspaper = newspaper
-        self._attr_name = f"{newspaper['name']} Frontpage"
-        self._attr_unique_id = f"image.{newspaper_id}_frontpage"
+        self._entry_id = entry_id
+        self._attr_name = "Frontpage"
+        self._attr_unique_id = f"{newspaper_id}_frontpage"
         self._image_url = None
         self._attr_entity_picture = None
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._newspaper_id)},
+            name=self._newspaper["name"],
+            manufacturer="Newspaper Frontpage",
+            model="Digital Edition",
+            entry_type="service",
+        )
 
     async def async_update(self) -> None:
         """Update the image."""
