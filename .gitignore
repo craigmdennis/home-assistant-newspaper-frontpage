@@ -81,5 +81,4 @@ deploy.py
 .env.*
 !.env.example
 
-# Ignore .cursor directory
-.cursor/ 
+# Ignore .cursor directory 
