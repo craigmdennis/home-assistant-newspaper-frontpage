@@ -24,9 +24,6 @@ class NewspaperFrontpageConfigFlow(config_entries.ConfigFlow, domain="newspaper_
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
-        if self._async_current_entries():
-            return self.async_abort(reason="single_instance_allowed")
-
         if user_input is not None:
             newspaper_id = user_input["newspaper_id"]
             
@@ -35,7 +32,7 @@ class NewspaperFrontpageConfigFlow(config_entries.ConfigFlow, domain="newspaper_
             self._abort_if_unique_id_configured()
 
             return self.async_create_entry(
-                title="Newspaper Frontpages",  # Generic title for the device
+                title=NEWSPAPERS[newspaper_id]["name"],
                 data={"newspaper_id": newspaper_id},
             )
 

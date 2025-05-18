@@ -19,7 +19,7 @@ NEWSPAPERS = {
         "url": "https://www.frontpages.com/the-guardian/",
     },
     "times": {
-        "name": "The Times",
+        "name": "The Sunday Times",
         "url": "https://www.frontpages.com/the-times/",
     },
     "telegraph": {

@@ -1,9 +1,17 @@
 {
   "entity": {
-    "camera": {
+    "image": {
       "newspaper_frontpage": {
-        "name": "Newspaper Frontpage"
+        "name": "Frontpage"
       }
+    }
+  },
+  "config": {
+    "abort": {
+      "already_configured": "This newspaper is already configured"
+    },
+    "error": {
+      "no_newspapers_selected": "Please select a newspaper"
     }
   }
 }
